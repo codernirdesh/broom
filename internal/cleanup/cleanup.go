@@ -22,7 +22,6 @@ func Run() {
 		section("TEMP FILES")
 		removeSafe("C:\\Windows\\Temp")
 		removeSafe(os.TempDir())
-		removeSafe(os.Getenv("LOCALAPPDATA") + "\\Temp")
 	}()
 
 	// PREFETCH
@@ -107,7 +106,8 @@ func Run() {
 	go func() {
 		defer wg.Done()
 		section("MICROSOFT STORE RESET")
-		runCmd("wsreset.exe")
+		storeCache := filepath.Join(os.Getenv("LOCALAPPDATA"), "Packages", "Microsoft.WindowsStore_8wekyb3d8bbwe", "LocalCache")
+		removeSafe(storeCache)
 	}()
 
 	// DISM CLEANUP
@@ -140,6 +140,9 @@ func removeSafe(path string) {
 	}
 
 	var wg sync.WaitGroup
+	var failedCount int
+	var mu sync.Mutex
+
 	for _, e := range entries {
 		wg.Add(1)
 		go func(e os.DirEntry) {
@@ -147,13 +150,19 @@ func removeSafe(path string) {
 			fullPath := filepath.Join(path, e.Name())
 			err := os.RemoveAll(fullPath)
 			if err != nil {
-				logger.Step("[FAILED] " + fullPath)
+				mu.Lock()
+				failedCount++
+				mu.Unlock()
 			}
 		}(e)
 	}
 	wg.Wait()
 
-	logger.Step("[OK] Cleaned: " + path)
+	if failedCount > 0 {
+		logger.Step(fmt.Sprintf("[OK] Cleaned: %s (Skipped %d files in use)", path, failedCount))
+	} else {
+		logger.Step("[OK] Cleaned: " + path)
+	}
 }
 
 func runCmd(name string, args ...string) {
