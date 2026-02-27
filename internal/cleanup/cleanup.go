@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
+	"syscall"
 
 	"broom/internal/logger"
 )
@@ -167,6 +168,7 @@ func removeSafe(path string) {
 
 func runCmd(name string, args ...string) {
 	cmd := exec.Command(name, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	err := cmd.Run()
 	if err != nil {
 		logger.Step(fmt.Sprintf("[WARN] Command failed: %s %v", name, args))
@@ -175,6 +177,7 @@ func runCmd(name string, args ...string) {
 
 func startCmd(name string, args ...string) {
 	cmd := exec.Command(name, args...)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	err := cmd.Start()
 	if err != nil {
 		logger.Step(fmt.Sprintf("[WARN] Command start failed: %s %v", name, args))
