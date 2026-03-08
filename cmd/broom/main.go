@@ -8,6 +8,7 @@ import (
 
 	"broom/internal/cleanup"
 	"broom/internal/elevate"
+	"broom/internal/install"
 	"broom/internal/logger"
 )
 
@@ -22,6 +23,8 @@ func main() {
 		elevate.RunAsAdmin()
 		return // RunAsAdmin exits the process; safety fallback
 	}
+
+	install.EnsureInPath()
 
 	cleanup.Run()
 
