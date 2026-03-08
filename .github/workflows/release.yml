@@ -1,0 +1,44 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build GUI binary
+        run: |
+          mkdir -p bin
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w -H windowsgui" -o bin/broom.exe ./cmd/broom
+
+      - name: Build console binary
+        run: |
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/broom-console.exe ./cmd/broom
+
+      - name: Generate release tag
+        id: tag
+        run: echo "tag=v$(date +'%Y.%m.%d')-${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Release ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            bin/broom.exe
+            bin/broom-console.exe
